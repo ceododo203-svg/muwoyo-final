@@ -195,7 +195,7 @@ export default function HeroSection() {
                   "Olá! Gostaria de saber como a Muwoyo funciona.",
                 );
                 window.open(
-                  `https://wa.me/244928663898?text=${message}`,
+                  `https://wa.me/244962011401?text=${message}`,
                   "_blank",
                 );
               }}

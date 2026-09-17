@@ -83,13 +83,13 @@ export default function CreditGate({
                 {accountStatus === "trial" ? <Info className="h-6 w-6" /> : <CircleCheck className="h-6 w-6" />}
               </div>
               <h2 className="text-xl font-bold">{["trial", "inactive"].includes(accountStatus) ? "O seu período de teste terminou" : "O saldo da conta terminou"}</h2>
-              <p className="text-sm leading-6 text-muted-foreground">{["trial", "inactive"].includes(accountStatus) ? "O período de teste terminou. Contacte o suporte para ativar a sua conta e continuar a utilizar a automação." : "O saldo atual foi utilizado. Recarregue a conta para continuar a atender os seus clientes automaticamente."}</p>
+                <p className="text-sm leading-6 text-muted-foreground">{["trial", "inactive"].includes(accountStatus) ? "O período de teste terminou. Escolha um plano mensal para continuar a utilizar a automação." : "O saldo atual foi utilizado. Verifique o seu plano ou contacte o suporte."}</p>
               <Button
                 className="w-full"
                 size="lg"
                 onClick={() => navigate("/recargas")}
               >
-                {["trial", "inactive"].includes(accountStatus) ? "Contactar suporte" : "Recarregar agora"}
+                  {["trial", "inactive"].includes(accountStatus) ? "Escolher plano" : "Ver planos"}
               </Button>
               <p className="text-xs text-muted-foreground">Assim que a ativação for confirmada, o acesso volta ao normal.</p>
             </CardContent>

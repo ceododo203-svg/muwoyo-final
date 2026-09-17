@@ -7,7 +7,7 @@ interface AuthCtx {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, meta?: { full_name?: string; phone?: string }) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, meta?: { full_name?: string; phone?: string; province?: string; referral_code?: string }) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, meta?: { full_name?: string; phone?: string }) => {
+  const signUp = async (email: string, password: string, meta?: { full_name?: string; phone?: string; province?: string; referral_code?: string }) => {
     if (!isSupabaseConfigured) {
       return { error: "O Supabase não está configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY." };
     }

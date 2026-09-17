@@ -13,23 +13,28 @@ type TopUpPack = {
 };
 
 const defaultPacks: TopUpPack[] = [
-  { id: "small", name: "Muwoyo Small", messages: 500, price_kz: 7500, position: 1 },
-  { id: "medium", name: "Muwoyo Medium", messages: 1000, price_kz: 14000, position: 2 },
-  { id: "medium-ii", name: "Muwoyo Big", messages: 2500, price_kz: 30000, position: 3 },
+  { id: "start", name: "Muwoyo Start", messages: 500, price_kz: 7990, position: 1 },
+  { id: "growth", name: "Muwoyo Growth", messages: 1000, price_kz: 14990, position: 2 },
+  { id: "big", name: "Muwoyo Big", messages: 2500, price_kz: 30000, position: 3 },
+  { id: "enterprise", name: "Enterprise", messages: 2147483647, price_kz: 0, position: 4 },
 ];
 
 const packDetails: Record<string, { description: string; benefits: string[] }> = {
-  "Muwoyo Small": {
-    description: "Para começar ou para um menor volume de uso.",
-    benefits: ["500 mensagens", "Ideal para começar", "Sem expiração mensal", "Recarga pelo painel"],
+  "Muwoyo Start": {
+    description: "Para começar com as ferramentas essenciais da Muwoyo.",
+    benefits: ["500 créditos de IA", "1 agente de IA", "1 utilizador", "Até 50 produtos"],
   },
-  "Muwoyo Medium": {
-    description: "O equilíbrio entre preço e volume para o dia a dia.",
-    benefits: ["Melhor custo-benefício", "1.000 mensagens", "Sem expiração mensal", "Recarga pelo painel"],
+  "Muwoyo Growth": {
+    description: "Mais capacidade para negócios em crescimento.",
+    benefits: ["1.000 créditos de IA", "2 agentes de IA", "3 utilizadores", "Até 150 produtos"],
   },
   "Muwoyo Big": {
-    description: "Mais volume para quem atende mais clientes.",
-    benefits: ["2.500 mensagens", "Menor custo por uso", "Maior volume", "Sem expiração mensal"],
+    description: "Para equipas e operações com maior volume.",
+    benefits: ["2.500 créditos de IA", "2 agentes de IA", "10 utilizadores", "Até 500 produtos", "Shared Inbox", "SEO da loja"],
+  },
+  Enterprise: {
+    description: "Todas as funcionalidades para operações em escala.",
+    benefits: ["Tudo ilimitado", "Domínio personalizado", "SEO avançado", "Shared Inbox", "Suporte dedicado"],
   },
 };
 
@@ -40,14 +45,14 @@ export const MessagePacks = () => {
     if (!isSupabaseConfigured) return;
     const loadPacks = async () => {
       const { data, error } = await supabase
-        .from("top_up_packages")
-        .select("id,name,messages,price_kz,position")
+        .from("subscription_plans")
+        .select("id,name,monthly_messages,price_kz,position")
         .eq("is_active", true)
         .order("position", { ascending: true });
 
       if (!error) {
-        const loadedPacks = ((data as TopUpPack[]) || []).filter((pack) => !pack.name.toLowerCase().includes("big"));
-        setPacks(loadedPacks.length > 0 ? [...defaultPacks.map((fallback) => loadedPacks.find((pack) => pack.name === fallback.name) || fallback)] : defaultPacks);
+        const loadedPacks = ((data as Array<TopUpPack & { monthly_messages?: number }>) || []).map((pack) => ({ ...pack, messages: pack.monthly_messages ?? pack.messages }));
+        setPacks(loadedPacks.length > 0 ? loadedPacks : defaultPacks);
       }
     };
 
@@ -58,18 +63,16 @@ export const MessagePacks = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
         <div className="max-w-2xl mx-auto text-center mb-16">
           <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-4">
-            Pacotes de mensagens
+            Planos mensais
           </p>
-          <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground">Depois, recarregue mensagens quando precisar.</h2>
+          <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground">Escolha o plano para o seu negócio.</h2>
           <p className="mt-6 text-lg text-muted-foreground">
-            Depois de utilizar os créditos disponíveis, escolha apenas o pacote
-            adequado ao volume do seu negócio. Sem mensalidade e sem expiração
-            mensal dos pacotes.
+            Teste durante 3 dias com 100 mensagens gratuitas e escolha um plano mensal quando estiver pronto.
           </p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {packs.map((p, index) => (
+          {packs.slice(0, 4).map((p, index) => (
             <div
               key={p.id}
               className={`relative h-full rounded-2xl border bg-card p-6 flex flex-col ${
@@ -94,19 +97,19 @@ export const MessagePacks = () => {
                 {packDetails[p.name]?.description || "Mais capacidade para acompanhar o volume do seu negócio."}
               </p>
               <p className="text-sm text-muted-foreground mt-3">
-                {p.messages.toLocaleString("pt-AO")} mensagens
+                {p.name === "Enterprise" ? "Créditos ilimitados" : `${p.messages.toLocaleString("pt-AO")} créditos de IA por mês`}
               </p>
 
               <div className="mt-5 flex items-baseline gap-1">
                 <span className="text-3xl font-bold text-foreground tabular-nums">
-                  {p.price_kz.toLocaleString("pt-AO")}
+                  {p.name === "Enterprise" ? "Sob consulta" : p.price_kz.toLocaleString("pt-AO")}
                 </span>
                 <span className="text-sm font-semibold text-muted-foreground">
-                  Kz
+                  {p.name === "Enterprise" ? "" : "Kz"}
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">
-                ≈ {(p.price_kz / p.messages).toLocaleString("pt-AO", { maximumFractionDigits: 2 })} Kz por mensagem
+                {p.name === "Enterprise" ? "Fale com a nossa equipa" : "por mês"}
               </p>
 
               <ul className="mt-5 min-h-[92px] space-y-2 text-xs text-foreground">
@@ -126,37 +129,17 @@ export const MessagePacks = () => {
                     : "bg-secondary hover:bg-secondary/80 text-foreground"
                 }`}
               >
-                <Link to="/login">Comprar agora</Link>
+                {p.name === "Enterprise" ? <a href="https://wa.me/244962011401" target="_blank" rel="noreferrer">Falar com suporte</a> : <Link to="/login">Comprar agora</Link>}
               </Button>
             </div>
           ))}
-          <div className="relative h-full rounded-2xl border border-dashed border-primary bg-card p-6 flex flex-col shadow-soft">
-            <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-accent text-primary mb-4">
-              <MessageSquare className="h-4 w-4" />
-            </div>
-            <h3 className="text-base font-semibold text-foreground">Muwoyo Business</h3>
-            <p className="text-sm text-muted-foreground mt-1">Para empresas com maior volume</p>
-            <p className="mt-3 text-sm font-medium text-foreground">Precisa de mais mensagens ou de uma solução adaptada à sua operação?</p>
-            <p className="mt-4 text-sm font-semibold text-primary">Volume personalizado</p>
-            <div className="mt-5 text-3xl font-bold text-foreground">Sob consulta</div>
-            <p className="text-sm text-muted-foreground mt-2">Definimos uma solução de acordo com as necessidades e o volume de atendimento da sua empresa.</p>
-            <ul className="mt-4 space-y-2 text-xs text-foreground">
-              <li className="flex gap-2"><Check className="h-3.5 w-3.5 shrink-0 text-primary" strokeWidth={3} />Volume personalizado</li>
-              <li className="flex gap-2"><Check className="h-3.5 w-3.5 shrink-0 text-primary" strokeWidth={3} />Mais capacidade para a sua operação</li>
-              <li className="flex gap-2"><Check className="h-3.5 w-3.5 shrink-0 text-primary" strokeWidth={3} />Solução adaptada ao seu negócio</li>
-            </ul>
-            <Button asChild className="mt-auto w-full rounded-xl h-11 font-semibold">
-              <a href="https://wa.me/244928663898" target="_blank" rel="noreferrer">Falar com a nossa equipa</a>
-            </Button>
-          </div>
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-10">
-          Os créditos não possuem expiração mensal. Compre apenas quando
-          precisar de mais mensagens.
+          Cada plano fica ativo durante 30 dias e inclui o limite mensal indicado.
         </p>
         <p className="text-center text-sm font-semibold text-foreground mt-3">
-          Quanto mais mensagens comprar, menor fica o custo por mensagem.
+          Escolha outro plano quando o volume do seu negócio mudar.
         </p>
       </div>
     </section>

@@ -344,6 +344,39 @@ Deno.serve(async (req) => {
       return json({ ok: true, imported });
     }
 
+    if (normalizedAction === "sendMessage") {
+      const targetPhone = String(body?.phoneNumber || "").replace(/\D/g, "");
+      const text = typeof body?.messageText === "string" ? body.messageText.trim() : "";
+      if (!targetPhone || !text) return json({ error: "phone_and_message_required" }, 400);
+      const sent = await evoFetch(`/message/sendText/${encodeURIComponent(instanceName)}`, { method: "POST", body: JSON.stringify({ number: targetPhone, text }) });
+      if (!sent.ok) return json({ error: "whatsapp_send_failed", details: sent.data }, 502);
+      await admin.from("messages").insert({ user_id: userId, phone_number: targetPhone, message_text: text.slice(0, 4000), direction: "outbound", kind: "text", whatsapp_instance_id: instanceName, external_id: sent.data?.key?.id || null });
+      return json({ ok: true, data: sent.data });
+    }
+
+    if (normalizedAction === "sendCampaign") {
+      const campaignId = String(body?.campaignId || "");
+      if (!campaignId) return json({ error: "campaign_id_required" }, 400);
+      const { data: canCampaign } = await admin.rpc("has_plan_feature", { p_user_id: userId, p_feature: "campaigns" });
+      if (!canCampaign) return json({ error: "campaigns_not_available_for_plan" }, 403);
+      const { data: campaign } = await admin.from("campaigns").select("id,name,message_text,status").eq("id", campaignId).eq("user_id", userId).maybeSingle();
+      if (!campaign) return json({ error: "campaign_not_found" }, 404);
+      const { data: queue } = await admin.from("campaign_contacts").select("contact_id").eq("campaign_id", campaignId).eq("user_id", userId).eq("status", "pending");
+      const { data: contacts } = await admin.from("whatsapp_contacts").select("id,phone_number").eq("user_id", userId).in("id", (queue || []).map((item: { contact_id: string }) => item.contact_id));
+      const phoneById = new Map((contacts || []).map((contact: { id: string; phone_number: string }) => [contact.id, contact.phone_number]));
+      await admin.from("campaigns").update({ status: "sending" }).eq("id", campaignId);
+      let sentCount = 0;
+      for (const item of queue || []) {
+        const targetPhone = phoneById.get(item.contact_id);
+        if (!targetPhone) continue;
+        const sent = await evoFetch(`/message/sendText/${encodeURIComponent(instanceName)}`, { method: "POST", body: JSON.stringify({ number: targetPhone, text: campaign.message_text }) });
+        await admin.from("campaign_contacts").update({ status: sent.ok ? "sent" : "failed", sent_at: sent.ok ? new Date().toISOString() : null }).eq("campaign_id", campaignId).eq("contact_id", item.contact_id);
+        if (sent.ok) { sentCount++; await admin.from("messages").insert({ user_id: userId, phone_number: targetPhone, message_text: campaign.message_text, direction: "outbound", kind: "text", whatsapp_instance_id: instanceName, external_id: sent.data?.key?.id || null }); await admin.from("crm_activities").insert({ user_id: userId, contact_id: item.contact_id, activity_type: "campaign_sent", description: campaign.name }); }
+      }
+      await admin.from("campaigns").update({ status: sentCount === (queue || []).length ? "completed" : "error" }).eq("id", campaignId);
+      return json({ ok: true, sent: sentCount, total: (queue || []).length });
+    }
+
 
     // ============================================================
     // DISCONNECT

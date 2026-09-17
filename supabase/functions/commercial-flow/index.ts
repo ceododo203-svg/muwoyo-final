@@ -86,10 +86,6 @@ Deno.serve(async (req) => {
           await current.admin.from("notifications").insert({ user_id: manager.user_id, title: "Nova conta aguardando ativação", message: "Um setup foi confirmado e aguarda ativação.", type: "setup_awaiting_activation", link: "/admin" });
         }
       }
-      if (data?.status === "active") {
-        const { data: existingNotification } = await current.admin.from("notifications").select("id").eq("user_id", userId).eq("type", "account_activated").limit(1).maybeSingle();
-        if (!existingNotification) await current.admin.from("notifications").insert({ user_id: userId, title: "Conta ativada", message: "A sua conta foi ativada e recebeu 200 mensagens.", type: "account_activated", link: "/dashboard" });
-      }
       return json(data);
     }
 

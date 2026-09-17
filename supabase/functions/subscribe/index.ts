@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
@@ -22,9 +23,14 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const authorization = req.headers.get("Authorization");
+    if (!authorization?.startsWith("Bearer ")) return json({ error: "unauthorized" }, 401);
+    const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authorization } } });
+    const { data: authData } = await userClient.auth.getUser();
+    if (!authData.user) return json({ error: "unauthorized" }, 401);
     const body = await req.json().catch(() => ({}));
-    const subscription = body.subscription;
-    const user_id = body.user_id || null;
+    const subscription = body.subscription || body;
+    const user_id = authData.user.id;
 
     if (!subscription || !subscription.endpoint) {
       return json({ error: "subscription object required" }, 400);

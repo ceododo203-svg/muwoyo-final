@@ -4,7 +4,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -272,6 +272,8 @@ export default function ProfileSheet({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>{children}</DialogTrigger>
         <DialogContent className="max-w-[calc(100vw-2rem)] gap-0 p-0 sm:max-w-md">
+          <DialogTitle className="sr-only">Perfil do utilizador</DialogTitle>
+          <DialogDescription className="sr-only">Dados e definições da conta.</DialogDescription>
           {Body}
         </DialogContent>
       </Dialog>

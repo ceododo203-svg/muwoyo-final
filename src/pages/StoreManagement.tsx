@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, QrCode, Trash2, Download, ExternalLink } from "lucide-react";
 
-type StoreRow = { id: string; name: string; slug: string; logo_url: string | null; theme_color: string | null; header_color: string | null; checkout_whatsapp: string | null; description: string | null };
+type StoreRow = { id: string; name: string; slug: string; logo_url: string | null; theme_color: string | null; header_color: string | null; checkout_whatsapp: string | null; description: string | null; custom_domain?: string | null; custom_domain_verified?: boolean; seo_title?: string | null; seo_description?: string | null; seo_keywords?: string | null };
 type Slide = { id: string; title: string | null; subtitle: string | null; image_url: string | null; bg_color: string | null; link_url: string | null; position: number };
 
 const COLORS = [
@@ -26,7 +26,8 @@ export default function StoreManagement() {
   const { user } = useAuth(); const { toast } = useToast();
   const [store, setStore] = useState<StoreRow | null>(null);
   const [slides, setSlides] = useState<Slide[]>([]);
-  const [form, setForm] = useState({ name: "", logo_url: "", theme_color: "#16a34a", header_color: "#16a34a", checkout_whatsapp: "", description: "" });
+  const [form, setForm] = useState({ name: "", logo_url: "", theme_color: "#16a34a", header_color: "#16a34a", checkout_whatsapp: "", description: "", custom_domain: "", seo_title: "", seo_description: "", seo_keywords: "" });
+  const [planName, setPlanName] = useState("Muwoyo Start");
   const [qrOpen, setQrOpen] = useState(false);
   const [slideOpen, setSlideOpen] = useState(false);
   const [slideForm, setSlideForm] = useState({ title: "", subtitle: "", image_url: "", bg_color: "#16a34a", link_url: "" });
@@ -35,14 +36,16 @@ export default function StoreManagement() {
 
   const load = async () => {
     if (!user) return;
-    let { data: s } = await supabase.from("stores").select("id,name,slug,logo_url,theme_color,header_color,checkout_whatsapp,description").eq("user_id", user.id).maybeSingle();
+    const { data: profile } = await supabase.from("profiles").select("plan_id").eq("user_id", user.id).maybeSingle();
+    if (profile?.plan_id) { const { data: plan } = await supabase.from("subscription_plans").select("name").eq("id", profile.plan_id).maybeSingle(); setPlanName(plan?.name || "Muwoyo Start"); }
+    let { data: s } = await supabase.from("stores").select("id,name,slug,logo_url,theme_color,header_color,checkout_whatsapp,description,custom_domain,custom_domain_verified,seo_title,seo_description,seo_keywords").eq("user_id", user.id).maybeSingle();
     if (!s) {
       const slug = `loja-${user.id.slice(0, 8)}`;
       const created = await supabase.from("stores").insert({ user_id: user.id, name: "Minha Loja", slug, is_active: true }).select().single();
       s = created.data as any;
     }
     setStore(s as any);
-    if (s) setForm({ name: s.name || "", logo_url: s.logo_url || "", theme_color: s.theme_color || "#16a34a", header_color: (s as any).header_color || "#16a34a", checkout_whatsapp: s.checkout_whatsapp || "", description: s.description || "" });
+    if (s) { const store = s as StoreRow; setForm({ name: store.name || "", logo_url: store.logo_url || "", theme_color: store.theme_color || "#16a34a", header_color: store.header_color || "#16a34a", checkout_whatsapp: store.checkout_whatsapp || "", description: store.description || "", custom_domain: store.custom_domain || "", seo_title: store.seo_title || "", seo_description: store.seo_description || "", seo_keywords: store.seo_keywords || "" }); }
     if (s) {
       const { data } = await supabase.from("store_carousel_slides").select("*").eq("store_id", (s as any).id).order("position");
       setSlides((data as any) || []);
@@ -96,6 +99,8 @@ export default function StoreManagement() {
           <div className="space-y-2"><Label>WhatsApp para checkout</Label><Input value={form.checkout_whatsapp} onChange={(e) => setForm({ ...form, checkout_whatsapp: e.target.value.replace(/\D/g, "") })} placeholder="244928663898" /></div>
           <div className="space-y-2"><Label>Logo da loja</Label><Input type="file" accept="image/*" onChange={async (e) => { const f = e.target.files?.[0]; if (f) setForm({ ...form, logo_url: (await uploadImage(f, "logos")) || "" }); }} />{form.logo_url && <img src={form.logo_url} alt="" className="mt-2 h-12 object-contain" />}</div>
           <div className="space-y-2 md:col-span-2"><Label>Descrição</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+          <div className="space-y-3 md:col-span-2 rounded-md border p-4"><Label>Domínio personalizado</Label><Input disabled={!['Muwoyo Big', 'Enterprise'].includes(planName)} value={form.custom_domain} onChange={(e) => setForm({ ...form, custom_domain: e.target.value.toLowerCase().trim() })} placeholder="www.minhaempresa.ao" />{['Muwoyo Big', 'Enterprise'].includes(planName) ? <p className="text-xs text-muted-foreground">Aponte o seu domínio para `stores.muwoyo.com` e aguarde a verificação DNS. Estado: {store?.custom_domain_verified ? "verificado" : "aguardando verificação"}.</p> : <p className="text-xs text-muted-foreground">Disponível nos planos Muwoyo Big e Enterprise.</p>}</div>
+          <div className="space-y-3 md:col-span-2 rounded-md border p-4"><Label>SEO da loja</Label><Input disabled={!['Muwoyo Big', 'Enterprise'].includes(planName)} value={form.seo_title} onChange={(e) => setForm({ ...form, seo_title: e.target.value })} placeholder="Título para motores de busca" /><Textarea disabled={!['Muwoyo Big', 'Enterprise'].includes(planName)} value={form.seo_description} onChange={(e) => setForm({ ...form, seo_description: e.target.value })} placeholder="Descrição da loja para motores de busca" /><Input disabled={!['Muwoyo Big', 'Enterprise'].includes(planName)} value={form.seo_keywords} onChange={(e) => setForm({ ...form, seo_keywords: e.target.value })} placeholder="Palavras-chave separadas por vírgula" />{!['Muwoyo Big', 'Enterprise'].includes(planName) && <p className="text-xs text-muted-foreground">SEO avançado está disponível nos planos Muwoyo Big e Enterprise.</p>}</div>
           <div className="space-y-2 md:col-span-2">
             <Label>Cor do header (onde fica a logo)</Label>
             <div className="flex flex-wrap gap-2">

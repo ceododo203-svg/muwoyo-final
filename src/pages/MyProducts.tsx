@@ -15,10 +15,10 @@ import { Plus, Pencil, Trash2, AlertCircle, X } from "lucide-react";
 type Category = { id: string; name: string };
 type Product = {
   id: string; name: string; description: string | null; price: number; discount_price: number | null;
-  stock: number; image_url: string | null; is_sold_out: boolean; category_ids: string[] | null; rating_avg: number; rating_count: number;
+  stock: number; image_url: string | null; image_urls?: string[]; is_sold_out: boolean; category_ids: string[] | null; rating_avg: number; rating_count: number;
 };
 
-const emptyForm = { name: "", description: "", price: "", discount_price: "", stock: "", image_url: "", category_ids: [] as string[], is_sold_out: false };
+const emptyForm = { name: "", description: "", price: "", discount_price: "", stock: "", image_url: "", image_urls: [] as string[], category_ids: [] as string[], is_sold_out: false };
 
 export default function MyProducts() {
   const { user } = useAuth(); const { toast } = useToast();
@@ -42,7 +42,8 @@ export default function MyProducts() {
     const { data: c } = await supabase.from("categories").select("id,name").eq("user_id", user.id).order("name");
     setCategories((c as any) || []);
     const { data: p } = await supabase.from("products").select("id,name,description,price,discount_price,stock,image_url,is_sold_out,category_ids,rating_avg,rating_count").eq("user_id", user.id).order("created_at", { ascending: false });
-    setProducts((p as any) || []);
+    const { data: images } = await supabase.from("product_images").select("product_id,url,position").in("product_id", (p || []).map((product) => product.id)).order("position");
+    setProducts(((p || []) as Product[]).map((product) => ({ ...product, image_urls: (images || []).filter((image) => image.product_id === product.id).map((image) => image.url) })));
   };
   useEffect(() => { load(); }, [user]);
 
@@ -69,7 +70,7 @@ export default function MyProducts() {
       name: p.name, description: p.description || "", price: String(p.price ?? ""),
       discount_price: p.discount_price ? String(p.discount_price) : "",
       stock: String(p.stock ?? 0), image_url: p.image_url || "",
-      category_ids: p.category_ids || [], is_sold_out: p.is_sold_out,
+      category_ids: p.category_ids || [], image_urls: p.image_urls || (p.image_url ? [p.image_url] : []), is_sold_out: p.is_sold_out,
     });
     setOpen(true);
   };
@@ -81,12 +82,16 @@ export default function MyProducts() {
     const payload = {
       user_id: user.id, store_id: storeId, name: form.name, description: form.description,
       price: Number(form.price || 0), discount_price: form.discount_price ? Number(form.discount_price) : null,
-      stock: Number(form.stock || 0), image_url: form.image_url || null,
+      stock: Number(form.stock || 0), image_url: form.image_urls[0] || form.image_url || null,
       category_ids: form.category_ids, is_sold_out: form.is_sold_out, is_active: true,
     };
-    const { error } = editing
-      ? await supabase.from("products").update(payload).eq("id", editing.id)
-      : await supabase.from("products").insert(payload);
+    const result = editing ? await supabase.from("products").update(payload).eq("id", editing.id) : await supabase.from("products").insert(payload).select("id").single();
+    const productId = editing?.id || result.data?.id;
+    if (!result.error && productId) {
+      await supabase.from("product_images").delete().eq("product_id", productId);
+      if (form.image_urls.length) await supabase.from("product_images").insert(form.image_urls.map((url, position) => ({ product_id: productId, url, position })));
+    }
+    const error = result.error;
     setBusy(false);
     if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
     toast({ title: editing ? "Produto atualizado" : "Produto adicionado" });
@@ -186,12 +191,11 @@ export default function MyProducts() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Imagem</Label>
-              <Input type="file" accept="image/*" onChange={async (e) => { const f = e.target.files?.[0]; if (f) setForm({ ...form, image_url: (await uploadImage(f)) || "" }); }} />
-              {form.image_url && (
+              <Label>Imagens do produto</Label>
+              <Input type="file" accept="image/*" multiple onChange={async (e) => { const files = Array.from(e.target.files || []); const urls = (await Promise.all(files.map(uploadImage))).filter((url): url is string => Boolean(url)); setForm((current) => ({ ...current, image_url: current.image_urls[0] || urls[0] || current.image_url, image_urls: [...current.image_urls, ...urls] })); }} />
+              {form.image_urls.length > 0 && (
                 <div className="relative inline-block">
-                  <img src={form.image_url} alt="" className="h-28 rounded object-cover" />
-                  <button type="button" onClick={() => setForm({ ...form, image_url: "" })} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"><X className="h-3 w-3" /></button>
+                  <div className="flex flex-wrap gap-2">{form.image_urls.map((url, index) => <div key={url} className="relative"><img src={url} alt={`Imagem ${index + 1}`} className="h-20 w-20 rounded object-cover" /><button type="button" onClick={() => setForm((current) => ({ ...current, image_urls: current.image_urls.filter((item) => item !== url), image_url: current.image_urls[0] === url ? current.image_urls[1] || "" : current.image_url }))} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"><X className="h-3 w-3" /></button></div>)}</div>
                 </div>
               )}
             </div>

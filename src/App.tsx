@@ -25,8 +25,11 @@ import Schedule from "./pages/Schedule";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminTokens from "./pages/AdminTokens";
 import AdminTutorials from "./pages/AdminTutorials";
+import AdminAffiliatesPage from "./pages/AdminAffiliates";
+import AdminPayments from "./pages/AdminPayments";
 import HumanTransfers from "./pages/HumanTransfers";
 import Tutorial from "./pages/Tutorial";
+import AffiliatesPage from "./pages/Affiliates";
 import SubAdminDashboard from "./pages/SubAdminDashboard";
 import NotFound from "./pages/NotFound.tsx";
 import LandingPageMWY from "../LandingPageMWY";
@@ -38,6 +41,12 @@ import { TermsOfUse } from "./pages/TermsOfUse";
 import { PrivacyPolicyViewer } from "./pages/PrivacyPolicyViewer";
 import { TermsOfUseViewer } from "./pages/TermsOfUseViewer";
 import PwaLaunchGate from "./components/PwaLaunchGate";
+import SettingsPage from "./pages/Settings";
+import Billing from "./pages/Billing";
+import CRM from "./pages/CRM";
+import Campaigns from "./pages/Campaigns";
+import FollowUp from "./pages/FollowUp";
+import Inbox from "./pages/Inbox";
 
 const queryClient = new QueryClient();
 const protectedPage = (page: JSX.Element) => (
@@ -53,7 +62,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <PwaLaunchGate>
           <Routes>
@@ -100,6 +109,16 @@ const App = () => (
               }
             />
             <Route
+              path="/admin/afiliados"
+              element={
+                <RoleRoute allow={["admin"]}>
+                  <AdminAffiliatesPage />
+                </RoleRoute>
+              }
+            />
+            <Route path="/admin/pagamentos" element={<RoleRoute allow={["admin"]}><AdminPayments /></RoleRoute>} />
+            <Route path="/gestor/pagamentos" element={<RoleRoute allow={["sub_admin"]}><AdminPayments mode="sub" /></RoleRoute>} />
+            <Route
               path="/gestor"
               element={
                 <RoleRoute allow={["sub_admin"]}>
@@ -144,6 +163,13 @@ const App = () => (
               element={protectedPage(<StoreManagement />)}
             />
             <Route path="/produtos" element={protectedPage(<MyProducts />)} />
+            <Route path="/afiliados" element={protectedPage(<AffiliatesPage />)} />
+            <Route path="/definicoes" element={protectedPage(<SettingsPage />)} />
+            <Route path="/faturacao" element={protectedPage(<Billing />)} />
+            <Route path="/crm" element={protectedPage(<CRM />)} />
+            <Route path="/campanhas" element={protectedPage(<Campaigns />)} />
+            <Route path="/follow-up" element={protectedPage(<FollowUp />)} />
+            <Route path="/inbox" element={protectedPage(<Inbox />)} />
             <Route path="/tutorial" element={protectedPage(<Tutorial />)} />
             <Route
               path="/recargas"

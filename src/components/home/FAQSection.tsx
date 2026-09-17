@@ -8,23 +8,23 @@ import {
 const faqs = [
   {
     question: "A Muwoyo cobra mensalidade?",
-    answer: "Não. A ativação da Muwoyo é feita através de um pagamento único de 22.500 Kz. Depois, pode comprar mensagens apenas quando precisar.",
+    answer: "Sim. Depois dos 3 dias de teste, escolha um plano mensal conforme o volume do seu negócio.",
   },
   {
-    question: "Como funcionam as 50 mensagens gratuitas?",
-    answer: "O teste começa quando você conecta o seu WhatsApp pela primeira vez. A partir desse momento, tem 24 horas e até 50 mensagens para testar o Agente de IA.",
+    question: "Como funcionam as 100 mensagens gratuitas?",
+    answer: "O teste começa quando você confirma o email. A partir desse momento, tem 3 dias e até 100 mensagens para testar a Muwoyo.",
   },
   {
     question: "O que recebo depois de ativar a conta?",
-    answer: "Depois da ativação, recebe 200 mensagens de boas-vindas para continuar a utilizar a Muwoyo.",
+    answer: "Depois da confirmação do pagamento, o plano escolhido fica ativo por 30 dias e renova mediante novo pagamento.",
   },
   {
     question: "As mensagens têm validade?",
-    answer: "As mensagens dos packs não expiram mensalmente. O teste gratuito termina após 24 horas ou quando as 50 mensagens forem utilizadas, o que acontecer primeiro.",
+    answer: "O teste termina após 3 dias ou quando as 100 mensagens forem utilizadas. Cada plano pago tem o seu limite mensal.",
   },
   {
     question: "O que acontece quando as minhas mensagens terminarem?",
-    answer: "Pode comprar um novo pacote diretamente através da plataforma e continuar o atendimento.",
+    answer: "Pode escolher outro plano ou enviar um novo comprovativo quando o ciclo mensal terminar.",
   },
   {
     question: "Como a IA conhece o meu negócio?",
@@ -126,7 +126,7 @@ const FAQSection = () => {
             Ainda tem dúvidas? Entre em contato com nosso suporte
           </p>
           <a
-            href="https://wa.me/244928663898"
+            href="https://wa.me/244962011401"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"

@@ -134,10 +134,10 @@ const Footer = () => {
               <li className="flex items-center gap-3">
                 <Phone className="w-4 h-4 text-primary" />
                 <a
-                href="https://wa.me/244928663898"
+                href="https://wa.me/244962011401"
                 className="text-background/70 hover:text-primary transition-colors"
               >
-                WhatsApp: +244 928 663 898
+                WhatsApp: +244 962 011 401
               </a>
               </li>
               <li className="flex items-start gap-3">

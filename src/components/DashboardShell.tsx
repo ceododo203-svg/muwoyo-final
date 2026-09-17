@@ -2,16 +2,23 @@ import { ReactNode, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   ChartArea,
-  CreditCard,
+  Building2,
   Menu,
   Settings,
   Store,
-  UsersRound,
+  Gift,
   ShoppingBag,
   CalendarDays,
   Boxes,
   ArrowRightLeft,
   PlayCircle,
+  UsersRound,
+  Wallet,
+  CreditCard,
+  KanbanSquare,
+  Megaphone,
+  Inbox as InboxIcon,
+  Workflow,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -23,14 +30,21 @@ import logo from "@/assets/muwoyo-logo.png";
 
 const items = [
   { title: "Dashboard", to: "/dashboard", icon: ChartArea },
-  { title: "Informações do negócio", to: "/negocio", icon: Settings },
+  { title: "Informações do negócio", to: "/negocio", icon: Building2 },
   { title: "Meus contactos", to: "/whatsapp", icon: UsersRound },
+  { title: "CRM", to: "/crm", icon: KanbanSquare },
+  { title: "Inbox", to: "/inbox", icon: InboxIcon },
+  { title: "Campanhas", to: "/campanhas", icon: Megaphone },
+  { title: "Follow Up IA", to: "/follow-up", icon: Workflow },
   { title: "Pedidos", to: "/pedidos", icon: ShoppingBag },
   { title: "Minha Agenda", to: "/agenda", icon: CalendarDays },
   { title: "Transferido para humano", to: "/transferido-para-humano", icon: ArrowRightLeft },
   { title: "Meus Produtos", to: "/produtos", icon: Boxes },
   { title: "Minha Loja", to: "/minha-loja", icon: Store },
-  { title: "Recarregar mensagens", to: "/recargas", icon: CreditCard },
+  { title: "Afiliados", to: "/afiliados", icon: Gift },
+  { title: "Pagamentos", to: "/recargas", icon: CreditCard },
+  { title: "Faturação", to: "/faturacao", icon: Wallet },
+  { title: "Definições", to: "/definicoes", icon: Settings },
   { title: "Tutorial", to: "/tutorial", icon: PlayCircle },
 ];
 

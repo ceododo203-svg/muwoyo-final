@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { BarChart3, Bell, Coins, LogOut, Menu, Shield, Users, UserPlus, Search, PlayCircle } from "lucide-react";
+import { BarChart3, Bell, Coins, LogOut, Menu, Shield, Users, UserPlus, Search, PlayCircle, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -9,8 +9,8 @@ import NotificationBell from "@/components/NotificationBell";
 import ProfileSheet from "@/components/ProfileSheet";
 import logo from "@/assets/muwoyo-logo.png";
 
-const adminItems = [{ title: "Dashboard", to: "/admin", icon: BarChart3 }, { title: "Tokens", to: "/admin/tokens", icon: Coins }, { title: "Tutoriais", to: "/admin/tutorials", icon: PlayCircle }, { title: "Usuários", to: "/admin", icon: Users }, { title: "Subadmins", to: "/admin", icon: Shield }, { title: "Notificações", to: "/admin", icon: Bell }];
-const subItems = [{ title: "Dashboard", to: "/gestor", icon: BarChart3 }, { title: "Cadastrar usuário", to: "/gestor/create-user", icon: UserPlus }, { title: "Meus usuários", to: "/gestor/users", icon: Users }, { title: "Mensagem ao Admin", to: "/gestor/notify-admin", icon: Bell }];
+const adminItems = [{ title: "Dashboard", to: "/admin", icon: BarChart3 }, { title: "Tokens", to: "/admin/tokens", icon: Coins }, { title: "Tutoriais", to: "/admin/tutorials", icon: PlayCircle }, { title: "Afiliados", to: "/admin/afiliados", icon: Users }, { title: "Pagamentos", to: "/admin/pagamentos", icon: CreditCard }, { title: "Usuários", to: "/admin", icon: Users }, { title: "Subadmins", to: "/admin", icon: Shield }, { title: "Notificações", to: "/admin", icon: Bell }];
+const subItems = [{ title: "Dashboard", to: "/gestor", icon: BarChart3 }, { title: "Cadastrar usuário", to: "/gestor/create-user", icon: UserPlus }, { title: "Meus usuários", to: "/gestor/users", icon: Users }, { title: "Pagamentos", to: "/gestor/pagamentos", icon: CreditCard }, { title: "Mensagem ao Admin", to: "/gestor/notify-admin", icon: Bell }];
 
 function Side({ mode }: { mode: "admin" | "sub" }) {
   const { user, signOut } = useAuth(); const navigate = useNavigate(); const items = mode === "admin" ? adminItems : subItems;

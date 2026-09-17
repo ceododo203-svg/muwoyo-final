@@ -85,7 +85,7 @@ export function LegalAcceptance({
   };
 
   const handleContactWhatsApp = () => {
-    window.open("https://wa.me/244928663898", "_blank");
+    window.open("https://wa.me/244962011401", "_blank");
   };
 
   return (

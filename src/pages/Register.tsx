@@ -4,6 +4,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/muwoyo-logo.png";
 
+const ANGOLA_PROVINCES = [
+  "Bengo", "Benguela", "Bié", "Cabinda", "Cuando", "Cubango", "Cuanza Norte",
+  "Cuanza Sul", "Cunene", "Huambo", "Huíla", "Icolo e Bengo", "Luanda", "Lunda Norte",
+  "Lunda Sul", "Malanje", "Moxico", "Moxico Leste", "Namibe", "Uíge", "Zaire",
+];
+
 export default function Register() {
   const { user, signUp } = useAuth();
   const navigate = useNavigate();
@@ -11,6 +17,7 @@ export default function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [province, setProvince] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -43,9 +50,12 @@ export default function Register() {
       return;
     }
     setSubmitting(true);
+    const referralCode = new URLSearchParams(window.location.search).get("ref")?.trim() || undefined;
     const { error } = await signUp(email, password, {
       full_name: name,
       phone: phone.replace(/\D/g, ""),
+      province,
+      referral_code: referralCode,
     });
     setSubmitting(false);
     if (error) {
@@ -55,7 +65,7 @@ export default function Register() {
     window.sessionStorage.setItem("muwoyo_pending_email", email);
     toast({
       title: "Conta criada",
-      description: "Confira o seu email para confirmar o acesso. Você receberá 50 mensagens de teste.",
+      description: "Confira o seu email para confirmar o acesso. Você receberá 100 mensagens durante 3 dias de teste.",
     });
     navigate("/confirmar-email", { replace: true, state: { email, initialSend: true } });
   };
@@ -71,7 +81,7 @@ export default function Register() {
             </div>
           </div>
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Criar conta</h2>
-          <p className="text-gray-500 mb-8">Comece com 50 mensagens gratuitas</p>
+          <p className="text-gray-500 mb-8">Comece com 100 mensagens gratuitas durante 3 dias</p>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <input
@@ -84,6 +94,19 @@ export default function Register() {
                 placeholder="Nome completo"
                 className="w-full border-b border-gray-300 py-2 bg-transparent outline-none transition focus:border-whatsapp"
               />
+            </div>
+            <div>
+              <label htmlFor="province" className="mb-1 block text-sm text-gray-500">Província</label>
+              <select
+                id="province"
+                required
+                value={province}
+                onChange={(event) => setProvince(event.target.value)}
+                className="w-full border-b border-gray-300 bg-transparent py-2 outline-none transition focus:border-whatsapp"
+              >
+                <option value="">Selecione a sua província</option>
+                {ANGOLA_PROVINCES.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
             </div>
             <div>
               <input

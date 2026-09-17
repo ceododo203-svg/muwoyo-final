@@ -49,6 +49,7 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [accountStatus, setAccountStatus] = useState("trial");
   const [firstLoginOpen, setFirstLoginOpen] = useState(false);
+  const [trialExpiresAt, setTrialExpiresAt] = useState<string | null>(null);
 
   const pausedUntilDate = instance?.automation_paused_until
     ? new Date(instance.automation_paused_until)
@@ -76,7 +77,7 @@ export default function Dashboard() {
         .maybeSingle(),
       supabase
         .from("profiles")
-        .select("messages_received, message_limit, account_status")
+        .select("messages_received, message_limit, account_status, trial_expires_at")
         .eq("user_id", user.id)
         .maybeSingle(),
       supabase
@@ -91,8 +92,9 @@ export default function Dashboard() {
       setMessagesReceived(prof.messages_received ?? 0);
       setMessageLimit(prof.message_limit ?? 0);
       setAccountStatus(prof.account_status ?? "trial");
+      setTrialExpiresAt(prof.trial_expires_at ?? null);
     }
-    if (typeof window !== "undefined" && !window.localStorage.getItem(`muwoyo-first-login-${user.id}`)) setFirstLoginOpen(true);
+    if (typeof window !== "undefined" && prof?.account_status === "trial" && prof?.trial_expires_at && new Date(prof.trial_expires_at) > new Date() && !window.localStorage.getItem(`muwoyo-first-login-${user.id}`)) setFirstLoginOpen(true);
     setMessagesToday(count ?? 0);
     setRefreshing(false);
   }, [user]);
@@ -159,6 +161,7 @@ export default function Dashboard() {
   };
 
   const remaining = Math.max(messageLimit - messagesReceived, 0);
+  const trialDaysRemaining = trialExpiresAt ? Math.max(0, Math.ceil((new Date(trialExpiresAt).getTime() - Date.now()) / 86400000)) : 0;
   const phoneNum = instance?.phone_number || instance?.phone;
   const automationStatus = !isConnected
     ? "Offline"
@@ -176,9 +179,11 @@ export default function Dashboard() {
     >
       {accountStatus !== "active" && (
         <div className="flex justify-end">
-          <Button size="sm" variant="outline" onClick={() => navigate("/recargas")}>Ativar conta</Button>
+          <Button size="sm" variant="outline" onClick={() => navigate("/recargas")}>Escolher plano</Button>
         </div>
       )}
+
+      {accountStatus === "trial" && trialExpiresAt && <p className="text-sm text-amber-700">Restam {trialDaysRemaining} {trialDaysRemaining === 1 ? "dia" : "dias"} de teste e {remaining} mensagens gratuitas.</p>}
 
       {accountStatus === "trial" && remaining <= 10 && remaining > 0 && (
         <p className="text-sm text-amber-700">Você tem apenas {remaining} mensagens de teste restantes.</p>
@@ -370,7 +375,7 @@ export default function Dashboard() {
         onConnected={() => loadAll()}
       />
       <Dialog open={firstLoginOpen} onOpenChange={(open) => { setFirstLoginOpen(open); if (!open) window.localStorage.setItem(`muwoyo-first-login-${user.id}`, "1"); }}>
-        <DialogContent className="max-w-md"><DialogHeader><DialogTitle>Bem-vindo à Muwoyo</DialogTitle></DialogHeader><div className="space-y-3 text-sm text-muted-foreground"><p>A sua conta está em período de teste com 50 mensagens gratuitas.</p><p>O trial começa agora e continua até o saldo terminar. Depois, ative a conta para continuar a automatizar o atendimento.</p><Button className="w-full" onClick={() => { setFirstLoginOpen(false); window.localStorage.setItem(`muwoyo-first-login-${user.id}`, "1"); }}>Entendi</Button></div></DialogContent>
+        <DialogContent className="max-w-md"><DialogHeader><DialogTitle>O seu teste começou</DialogTitle></DialogHeader><div className="space-y-3 text-sm text-muted-foreground"><p>A sua conta tem 3 dias de teste e 100 mensagens gratuitas.</p><p>Escolha um plano mensal quando quiser continuar com a Muwoyo.</p><Button className="w-full" onClick={() => { setFirstLoginOpen(false); window.localStorage.setItem(`muwoyo-first-login-${user.id}`, "1"); }}>Entendi</Button></div></DialogContent>
       </Dialog>
     </DashboardShell>
   );

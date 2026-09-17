@@ -86,8 +86,9 @@ export default function MessagesAreaChart({ userId }: { userId: string | undefin
           </Select>
         </div>
       </CardHeader>
-      <CardContent className="pl-2">
-        <ResponsiveContainer width="100%" height={260}>
+      <CardContent className="min-w-0 pl-2">
+        <div className="h-[260px] w-full min-w-0">
+          <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="inboundFill" x1="0" y1="0" x2="0" y2="1">
@@ -106,7 +107,8 @@ export default function MessagesAreaChart({ userId }: { userId: string | undefin
             <Area type="monotone" dataKey="inbound" name="Recebidas" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#inboundFill)" />
             <Area type="monotone" dataKey="outbound" name="IA respondeu" stroke="hsl(220 90% 56%)" strokeWidth={2} fill="url(#outboundFill)" />
           </AreaChart>
-        </ResponsiveContainer>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );

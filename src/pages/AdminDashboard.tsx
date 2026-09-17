@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import CommercialActivationQueue from "@/components/CommercialActivationQueue";
 import UserGrowthChart from "@/components/UserGrowthChart";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -50,6 +49,9 @@ type Row = {
   business_name: string | null;
   account_status?: string | null;
   trial_started_at?: string | null;
+  acquisition_source?: string | null;
+  province?: string | null;
+  plan_id?: string | null;
   instances?: { instance_name?: string | null }[];
   role?: string;
 };
@@ -82,6 +84,7 @@ export default function AdminDashboard() {
   const [edit, setEdit] = useState<Row | null>(null);
   const [msg, setMsg] = useState({ userId: "", amount: "" });
   const [editLimit, setEditLimit] = useState<{ userId: string; limit: string }>({ userId: "", limit: "" });
+  const [planNames, setPlanNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!adminUser || typeof window === "undefined") return;
@@ -105,7 +108,7 @@ export default function AdminDashboard() {
     const { data: profiles } = await sb
       .from("profiles")
       .select(
-        "user_id,full_name,phone,status,is_suspended,message_limit,messages_received,created_at,created_by,business_name,account_status,trial_started_at",
+        "user_id,full_name,phone,status,is_suspended,message_limit,messages_received,created_at,created_by,business_name,account_status,trial_started_at,acquisition_source,plan_id,subscription_expires_at",
       )
       .order("created_at", { ascending: false });
     const { data: roles } = await sb.from("user_roles").select("user_id,role");
@@ -383,11 +386,11 @@ export default function AdminDashboard() {
           Atualizar
         </Button>
       </div>
-      <CommercialActivationQueue />
       <UserGrowthChart rows={users} title="Crescimento de usuários" />
       <UserTable
         title="Todos os usuários"
         rows={filtered}
+        planNames={planNames}
         onEdit={setEdit}
         onMsg={(u) => setMsg({ userId: u.user_id, amount: "" })}
         onEditLimit={(u) => setEditLimit({ userId: u.user_id, limit: String(u.message_limit || 0) })}
@@ -407,6 +410,7 @@ export default function AdminDashboard() {
             .toLowerCase()
             .includes(search.toLowerCase()),
         )}
+        planNames={planNames}
         onEdit={setEdit}
         onMsg={() => {}}
         onEditLimit={(u) => setEditLimit({ userId: u.user_id, limit: String(u.message_limit || 0) })}
@@ -616,7 +620,7 @@ function UserDialog({ title, form, setForm, onSubmit }: any) {
     </DialogContent>
   );
 }
-function UserTable({ title, rows, onEdit, onMsg, onEditLimit, onSuspend, onDelete }: any) {
+function UserTable({ title, rows, planNames, onEdit, onMsg, onEditLimit, onSuspend, onDelete }: any) {
   return (
     <Card>
       <CardHeader>
@@ -630,6 +634,9 @@ function UserTable({ title, rows, onEdit, onMsg, onEditLimit, onSuspend, onDelet
               <th>Telefone</th>
               <th>Data</th>
               <th>Mensagens</th>
+              <th>Plano</th>
+              <th>Província</th>
+              <th>Origem</th>
               <th>Status</th>
               <th className="text-right">Ações</th>
             </tr>
@@ -651,6 +658,9 @@ function UserTable({ title, rows, onEdit, onMsg, onEditLimit, onSuspend, onDelet
                     Number(u.messages_received || 0)}{" "}
                   / {u.message_limit || 0}
                 </td>
+                <td>{planNames[u.plan_id || ""] || "Teste"}</td>
+                <td>{u.province || "-"}</td>
+                <td>{u.acquisition_source || "-"}</td>
                 <td>
                   {u.is_suspended || u.status === "suspended"
                     ? "Suspenso"

@@ -25,7 +25,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { RoleFixer } from "@/components/RoleFixer";
 import { useRole } from "@/hooks/useRole";
-import CommercialActivationQueue from "@/components/CommercialActivationQueue";
 import UserGrowthChart from "@/components/UserGrowthChart";
 
 type Row = {
@@ -258,7 +257,6 @@ export default function SubAdminDashboard() {
           </CardContent>
         </Card>
       </div>
-      <CommercialActivationQueue />
       <Card>
         <CardHeader>
           <CardTitle>Usuários cadastrados por mim</CardTitle>
@@ -384,7 +382,7 @@ export default function SubAdminDashboard() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Recarregar mensagens</DialogTitle>
+            <DialogTitle>Pagamentos</DialogTitle>
             <DialogDescription>
               Adicione mais mensagens ao limite do usuário selecionado.
             </DialogDescription>

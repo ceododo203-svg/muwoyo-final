@@ -19,10 +19,12 @@ type Field = {
   key: keyof Form;
   label: string;
   placeholder: string;
-  type?: "text" | "textarea";
+  type?: "text" | "textarea" | "select";
+  options?: string[];
   help?: string;
 };
 type Form = {
+  acquisition_source: string;
   business_name: string;
   ai_name: string;
   transfer_phone: string;
@@ -35,6 +37,13 @@ type Form = {
 };
 
 const STEPS: Field[] = [
+  {
+    key: "acquisition_source",
+    label: "Onde ouviu falar da Muwoyo?",
+    placeholder: "Selecione uma opção",
+    type: "select",
+    options: ["TikTok", "Facebook", "Google", "ChatGPT", "Amigo ou familiar", "Outro"],
+  },
   {
     key: "business_name",
     label: "Qual é o nome da sua empresa?",
@@ -91,6 +100,7 @@ export default function OnboardingGate({
   const [showLegalAcceptance, setShowLegalAcceptance] = useState(false);
   const [stateLoaded, setStateLoaded] = useState(false);
   const [form, setForm] = useState<Form>({
+    acquisition_source: "",
     business_name: "",
     ai_name: "Muwoyo",
     transfer_phone: "",
@@ -116,7 +126,7 @@ export default function OnboardingGate({
     supabase
       .from("profiles")
       .select(
-        "onboarding_completed,business_name,ai_name,transfer_phone,ai_personality,business_description,ai_rules,business_hours,appointment_duration_minutes,accepts_appointments",
+        "onboarding_completed,acquisition_source,business_name,ai_name,transfer_phone,ai_personality,business_description,ai_rules,business_hours,appointment_duration_minutes,accepts_appointments",
       )
       .eq("user_id", user.id)
       .maybeSingle()
@@ -129,6 +139,7 @@ export default function OnboardingGate({
         setStep(typeof onboardingState.step === "number" ? Math.min(Math.max(onboardingState.step, -1), STEPS.length - 1) : -1);
         setShowLegalAcceptance(onboardingState.legal === true);
         setForm({
+          acquisition_source: draft.acquisition_source ?? data?.acquisition_source ?? "",
           business_name: draft.business_name ?? data?.business_name ?? "",
           ai_name: draft.ai_name ?? data?.ai_name ?? "Muwoyo",
           transfer_phone: draft.transfer_phone ?? data?.transfer_phone ?? "",
@@ -291,7 +302,12 @@ export default function OnboardingGate({
           {current.help && (
             <p className="text-sm text-muted-foreground">{current.help}</p>
           )}
-          {current.key === "business_hours" ? (
+          {current.type === "select" ? (
+            <select required autoFocus className="h-12 w-full rounded-md border bg-background px-3 text-base" value={value} onChange={(e) => setForm({ ...form, [current.key]: e.target.value })}>
+              <option value="">{current.placeholder}</option>
+              {current.options?.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          ) : current.key === "business_hours" ? (
             <BusinessHoursConfig value={form.business_hours} onChange={(business_hours) => setForm({ ...form, business_hours })} />
           ) : current.type === "textarea" ? (
             <Textarea

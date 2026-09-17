@@ -38,6 +38,7 @@ type Product = {
   price: number;
   discount_price: number | null;
   image_url: string | null;
+  image_urls?: string[];
   stock: number | null;
   is_sold_out: boolean;
   category_ids: string[] | null;
@@ -129,7 +130,7 @@ export default function PublicStore() {
       if (s) {
         const sid = (s as any).id;
         const uid = (s as any).user_id;
-        const [p, c, sl] = await Promise.all([
+        const [p, c, sl, pi] = await Promise.all([
           supabase
             .from("products")
             .select(
@@ -147,8 +148,10 @@ export default function PublicStore() {
             .select("id,title,subtitle,image_url,bg_color")
             .eq("store_id", sid)
             .order("position"),
+          supabase.from("product_images").select("product_id,url,position").order("position"),
         ]);
-        setProducts((p.data as any) || []);
+        const productImages = (pi.data as Array<{ product_id: string; url: string }> | null) || [];
+        setProducts(((p.data as Product[]) || []).map((product) => ({ ...product, image_urls: productImages.filter((image) => image.product_id === product.id).map((image) => image.url) })));
         setCategories((c.data as any) || []);
         setSlides((sl.data as any) || []);
       }
@@ -589,13 +592,7 @@ export default function PublicStore() {
                 <DialogTitle className="line-clamp-2">{openP.name}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                {openP.image_url && (
-                  <img
-                    src={openP.image_url}
-                    alt={openP.name}
-                    className="aspect-square w-full rounded object-cover"
-                  />
-                )}
+                {(openP.image_urls?.length ? openP.image_urls : openP.image_url ? [openP.image_url] : []).map((url) => <img key={url} src={url} alt={openP.name} className="aspect-square w-full rounded object-cover" />)}
                 <div className="flex items-center gap-2">
                   <Stars value={Math.round(openP.rating_avg || 0)} />
                   <span className="text-sm text-muted-foreground">
