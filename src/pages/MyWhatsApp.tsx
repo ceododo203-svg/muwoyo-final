@@ -141,12 +141,12 @@ export default function MyWhatsApp() {
   const importFromWhatsApp = async () => {
     setImporting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("evolution-api", {
-        body: { action: "importContacts" },
+      const { data, error } = await supabase.functions.invoke("whatsapp-import", {
+        body: {},
       });
       setImporting(false);
       if (error) {
-        console.warn("Function importContacts not available:", error.message);
+        console.warn("Function whatsapp-import not available:", error.message);
         return toast({
           title: "Erro",
           description: error.message,

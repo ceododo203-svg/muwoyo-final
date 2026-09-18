@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  [data-inbox] > div:first-child {
+    border: 0;
+    box-shadow: none;
+  }
+
+  [data-inbox] > div:first-child button {
+    border-radius: 0;
+    border-width: 0 0 1px;
+    border-color: hsl(var(--border));
+  }
+
+  @media (max-width: 1023px) {
+    [data-inbox][data-has-selection="true"] > div:first-child {
+      display: none;
+    }
+
+    [data-inbox][data-has-selection="false"] > div:nth-child(2) {
+      display: none;
+    }
+  }
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */

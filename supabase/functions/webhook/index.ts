@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -137,6 +137,7 @@ Deno.serve(async (req) => {
           message_text: text.substring(0, 4000),
           direction: "inbound",
           kind,
+          media_url: m?.message?.imageMessage?.url || m?.message?.videoMessage?.url || m?.message?.audioMessage?.url || m?.message?.documentMessage?.url || null,
           whatsapp_instance_id: instanceName,
           external_id: m?.key?.id || null,
         });

@@ -10,6 +10,11 @@ import {
 } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import DateTimeSelect from "@/components/DateTimeSelect";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Phone, User, Clock, History } from "lucide-react";
@@ -83,6 +88,9 @@ export default function Schedule() {
   
   const [rows, setRows] = useState<Appt[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [manualForm, setManualForm] = useState({ customer_name: "", customer_phone: "", service: "", description: "", scheduled_at: "", status: "confirmed" });
 
   const load = async () => {
     if (!user) return;
@@ -126,6 +134,38 @@ export default function Schedule() {
       supabase.removeChannel(channel);
     };
   }, [user]);
+
+  const addManualAppointment = async () => {
+    if (!user || !manualForm.customer_name.trim() || !manualForm.scheduled_at) return;
+    const values = { customer_name: manualForm.customer_name.trim(), customer_phone: manualForm.customer_phone.replace(/\D/g, "") || null, service: manualForm.service.trim() || null, description: manualForm.description.trim() || null, scheduled_at: new Date(manualForm.scheduled_at).toISOString(), status: manualForm.status };
+    const { error } = editingId
+      ? await supabase.from("appointments").update(values).eq("id", editingId).eq("user_id", user.id)
+      : await supabase.from("appointments").insert({ user_id: user.id, ...values });
+    if (error) return;
+    setManualForm({ customer_name: "", customer_phone: "", service: "", description: "", scheduled_at: "", status: "confirmed" });
+    setEditingId(null);
+    setManualOpen(false);
+    await load();
+  };
+
+  const editAppointment = (appointment: Appt) => {
+    setEditingId(appointment.id);
+    const date = appointment.scheduled_at ? new Date(appointment.scheduled_at) : new Date();
+    setManualForm({ customer_name: appointment.customer_name || "", customer_phone: appointment.customer_phone || "", service: appointment.service || "", description: appointment.description || "", scheduled_at: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}T${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`, status: appointment.status });
+    setManualOpen(true);
+  };
+
+  const updateAppointmentStatus = async (id: string, status: string) => {
+    await supabase.from("appointments").update({ status }).eq("id", id).eq("user_id", user?.id || "");
+    await load();
+  };
+
+  const deleteAppointment = async (id: string) => {
+    if (!user || !window.confirm("Eliminar este agendamento?")) return;
+    await supabase.from("appointments").delete().eq("id", id).eq("user_id", user.id);
+    setDialogOpen(false);
+    await load();
+  };
 
   const groupedByDate = useMemo(() => {
     const map = new Map<string, Appt[]>();
@@ -230,8 +270,9 @@ export default function Schedule() {
     >
       <div className="space-y-6">
         <Card className="rounded-3xl bg-transparent shadow-none border-none min-h-auto sm:border-border sm:bg-card/90 sm:shadow-sm sm:min-h-[620px]">
-          <CardHeader className="hidden sm:block">
+          <CardHeader className="hidden sm:flex sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>Minha Agenda</CardTitle>
+            <Button onClick={() => setManualOpen(true)}>Novo agendamento</Button>
           </CardHeader>
           <CardContent className="grid gap-6 xl:grid-cols-[minmax(420px,1.1fr)_minmax(380px,0.9fr)]">
             <section className="space-y-6">
@@ -361,6 +402,11 @@ export default function Schedule() {
                             {appt.description}
                           </div>
                         )}
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button size="sm" variant="outline" onClick={() => editAppointment(appt)}>Editar</Button>
+                          <Button size="sm" variant="outline" onClick={() => void updateAppointmentStatus(appt.id, appt.status === "confirmed" ? "completed" : "confirmed")}>{appt.status === "confirmed" ? "Marcar concluído" : "Confirmar"}</Button>
+                          <Button size="sm" variant="destructive" onClick={() => void deleteAppointment(appt.id)}>Eliminar</Button>
+                        </div>
                       </div>
                     ))}
                     {selectedDayAppointments.length === 0 && (
@@ -373,6 +419,20 @@ export default function Schedule() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>{editingId ? "Editar agendamento" : "Novo agendamento"}</DialogTitle></DialogHeader>
+          <div className="grid gap-4">
+            <div><Label>Cliente</Label><Input required value={manualForm.customer_name} onChange={(event) => setManualForm({ ...manualForm, customer_name: event.target.value })} /></div>
+            <div className="grid gap-4 sm:grid-cols-2"><div><Label>Telefone</Label><Input value={manualForm.customer_phone} onChange={(event) => setManualForm({ ...manualForm, customer_phone: event.target.value })} /></div><div><Label>Serviço</Label><Input value={manualForm.service} onChange={(event) => setManualForm({ ...manualForm, service: event.target.value })} /></div></div>
+            <DateTimeSelect value={manualForm.scheduled_at} onChange={(scheduled_at) => setManualForm({ ...manualForm, scheduled_at })} required />
+            <div><Label>Estado</Label><Select value={manualForm.status} onValueChange={(status) => setManualForm({ ...manualForm, status })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="confirmed">Confirmado</SelectItem><SelectItem value="pending">Pendente</SelectItem></SelectContent></Select></div>
+            <div><Label>Descrição</Label><Textarea value={manualForm.description} onChange={(event) => setManualForm({ ...manualForm, description: event.target.value })} /></div>
+            <Button onClick={() => void addManualAppointment()} disabled={!manualForm.customer_name.trim() || !manualForm.scheduled_at}>Guardar agendamento</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-3xl w-full max-w-[calc(100vw-1.5rem)] mx-auto max-h-[80vh] overflow-y-auto">

@@ -9,6 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -36,6 +39,9 @@ export default function Orders() {
   const { user } = useAuth();
   const [rows, setRows] = useState<Order[]>([]);
   const [open, setOpen] = useState<Order | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [manualForm, setManualForm] = useState({ customer_name: "", customer_phone: "", customer_location: "", item_name: "", quantity: "1", price: "", notes: "" });
 
   const normalizeOrderItems = (value: any): any[] => {
     if (Array.isArray(value)) return value;
@@ -117,6 +123,36 @@ export default function Orders() {
     load();
   };
 
+  const deleteOrder = async (id: string) => {
+    if (!user || !window.confirm("Eliminar este pedido?")) return;
+    const { error } = await supabase.from("store_orders").delete().eq("id", id).eq("user_id", user.id);
+    if (error) return;
+    setOpen(null);
+    await load();
+  };
+
+  const addManualOrder = async () => {
+    if (!user || !manualForm.customer_name.trim() || !manualForm.item_name.trim()) return;
+    const quantity = Math.max(1, Number(manualForm.quantity) || 1);
+    const price = Math.max(0, Number(manualForm.price) || 0);
+    const values = { customer_name: manualForm.customer_name.trim(), customer_phone: manualForm.customer_phone.replace(/\D/g, "") || null, customer_location: manualForm.customer_location.trim() || null, items: [{ name: manualForm.item_name.trim(), qty: quantity, price }], total: quantity * price, notes: manualForm.notes.trim() || null };
+    const { error } = editingId
+      ? await supabase.from("store_orders").update(values).eq("id", editingId).eq("user_id", user.id)
+      : await supabase.from("store_orders").insert({ user_id: user.id, ...values, status: "new" });
+    if (error) return;
+    setManualForm({ customer_name: "", customer_phone: "", customer_location: "", item_name: "", quantity: "1", price: "", notes: "" });
+    setEditingId(null);
+    setManualOpen(false);
+    await load();
+  };
+
+  const editOrder = (order: Order) => {
+    const item = Array.isArray(order.items) ? order.items[0] || {} : {};
+    setEditingId(order.id);
+    setManualForm({ customer_name: order.customer_name || "", customer_phone: order.customer_phone || "", customer_location: order.customer_location || "", item_name: item.name || item.product || item.title || "", quantity: String(item.qty || 1), price: String(item.price ?? ""), notes: order.notes || "" });
+    setManualOpen(true);
+  };
+
   const statusLabel: Record<string, string> = {
     new: "Novo",
     confirmed: "Confirmado",
@@ -127,8 +163,9 @@ export default function Orders() {
   return (
     <DashboardShell
       title="Pedidos"
-      description="Pedidos preenchidos automaticamente pela IA durante as conversas."
+      description="Registe pedidos recebidos pela IA ou adicionados manualmente."
     >
+      <div className="mb-4 flex justify-end"><Button onClick={() => setManualOpen(true)}>Novo pedido</Button></div>
       <div className="grid gap-3">
         {rows.length === 0 && (
           <Card>
@@ -187,6 +224,19 @@ export default function Orders() {
           </Card>
         ))}
       </div>
+
+      <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>{editingId ? "Editar pedido" : "Novo pedido"}</DialogTitle></DialogHeader>
+          <div className="grid gap-4">
+            <div className="grid gap-4 sm:grid-cols-2"><div><Label>Cliente</Label><Input value={manualForm.customer_name} onChange={(event) => setManualForm({ ...manualForm, customer_name: event.target.value })} /></div><div><Label>Telefone</Label><Input value={manualForm.customer_phone} onChange={(event) => setManualForm({ ...manualForm, customer_phone: event.target.value })} /></div></div>
+            <div><Label>Localização</Label><Input value={manualForm.customer_location} onChange={(event) => setManualForm({ ...manualForm, customer_location: event.target.value })} /></div>
+            <div className="grid gap-4 sm:grid-cols-[1fr_120px_140px]"><div><Label>Item</Label><Input value={manualForm.item_name} onChange={(event) => setManualForm({ ...manualForm, item_name: event.target.value })} /></div><div><Label>Quantidade</Label><Input type="number" min="1" value={manualForm.quantity} onChange={(event) => setManualForm({ ...manualForm, quantity: event.target.value })} /></div><div><Label>Preço unitário</Label><Input type="number" min="0" value={manualForm.price} onChange={(event) => setManualForm({ ...manualForm, price: event.target.value })} /></div></div>
+            <div><Label>Notas</Label><Textarea value={manualForm.notes} onChange={(event) => setManualForm({ ...manualForm, notes: event.target.value })} /></div>
+            <Button onClick={() => void addManualOrder()} disabled={!manualForm.customer_name.trim() || !manualForm.item_name.trim()}>{editingId ? "Guardar alterações" : "Guardar pedido"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!open} onOpenChange={() => setOpen(null)}>
         <DialogContent className="max-w-lg">
@@ -258,6 +308,7 @@ export default function Orders() {
                   <b>Notas:</b> {open.notes}
                 </div>
               )}
+              <div className="flex gap-2"><Button variant="outline" className="flex-1" onClick={() => editOrder(open)}>Editar pedido</Button><Button variant="destructive" className="flex-1" onClick={() => void deleteOrder(open.id)}>Eliminar pedido</Button></div>
               <div className="flex items-center justify-between gap-3">
                 <div className="text-2xl font-bold text-primary">
                   {Number(open.total || 0).toLocaleString("pt-AO")} Kz

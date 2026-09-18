@@ -19,6 +19,7 @@ import {
   Megaphone,
   Inbox as InboxIcon,
   Workflow,
+  PanelLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -48,43 +49,44 @@ const items = [
   { title: "Tutorial", to: "/tutorial", icon: PlayCircle },
 ];
 
-function SidebarContent() {
+function SidebarContent({ collapsed = false }: { collapsed?: boolean }) {
   const { user } = useAuth();
   return (
-    <aside className="flex h-full w-72 flex-col border-r border-sidebar-border bg-sidebar">
-      <div className="flex h-20 items-center gap-3 px-6">
+    <aside className={`flex h-full flex-col border-r border-sidebar-border bg-sidebar transition-[width] ${collapsed ? "w-16" : "w-60"}`}>
+      <div className={`flex h-20 items-center gap-3 ${collapsed ? "justify-center px-2" : "px-6"}`}>
         <img src={logo} alt="Muwoyo" className="h-10 w-10 object-contain" />
-        <div className="text-2xl font-bold text-foreground">Muwoyo</div>
+        {!collapsed && <div className="text-2xl font-bold text-foreground">Muwoyo</div>}
       </div>
-      <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-2">
+      <nav className={`flex-1 space-y-1 overflow-y-auto py-2 ${collapsed ? "px-1" : "px-2"}`}>
         {items.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.to === "/"}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-md px-4 py-3 text-sm font-medium transition-colors ${isActive ? "bg-primary/10 text-primary" : "text-foreground/80 hover:bg-accent"}`
+              `flex items-center gap-3 rounded-md py-2.5 text-sm font-medium transition-colors ${collapsed ? "justify-center px-2" : "px-3"} ${isActive ? "bg-primary/10 text-primary" : "text-foreground/80 hover:bg-accent"}`
             }
+            title={collapsed ? item.title : undefined}
           >
             <item.icon className="h-4 w-4" />
-            <span>{item.title}</span>
+            {!collapsed && <span>{item.title}</span>}
           </NavLink>
         ))}
       </nav>
-      <div className="border-t border-sidebar-border p-4">
+      <div className={`border-t border-sidebar-border ${collapsed ? "p-1" : "p-2"}`}>
         <ProfileSheet>
-          <button className="flex w-full items-center gap-3 rounded-md bg-accent p-3 text-left transition-colors hover:bg-accent/80">
+          <button className={`flex w-full items-center gap-3 rounded-md bg-accent p-3 text-left transition-colors hover:bg-accent/80 ${collapsed ? "justify-center" : ""}`} title={collapsed ? user?.email || "Perfil" : undefined}>
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
               {(user?.email || "U").slice(0, 1).toUpperCase()}
             </div>
-            <div className="min-w-0 flex-1">
+            {!collapsed && <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold">
                 {user?.email?.split("@")[0] || "Usuário"}
               </div>
               <div className="truncate text-xs text-muted-foreground">
                 {user?.email}
               </div>
-            </div>
+            </div>}
           </button>
         </ProfileSheet>
       </div>
@@ -97,14 +99,17 @@ export default function DashboardShell({
   title,
   description,
   accountStatus,
+  wide = false,
 }: {
   children: ReactNode;
   title: string;
   description?: string;
   accountStatus?: string;
+  wide?: boolean;
 }) {
   const { user } = useAuth();
   const [currentAccountStatus, setCurrentAccountStatus] = useState(accountStatus || "trial");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -130,9 +135,9 @@ export default function DashboardShell({
   return (
     <div className="min-h-screen bg-background">
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:block">
-        <SidebarContent />
+        <SidebarContent collapsed={sidebarCollapsed} />
       </div>
-      <div className="lg:pl-72">
+      <div className={sidebarCollapsed ? "lg:pl-20" : "lg:pl-72"}>
         <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:h-20 lg:px-10">
             <div className="flex items-center gap-3">
@@ -162,6 +167,9 @@ export default function DashboardShell({
                     </p>
                   )}
                 </div>
+                <Button variant="ghost" size="icon" className="hidden lg:inline-flex" title={sidebarCollapsed ? "Expandir menu" : "Recolher menu"} onClick={() => setSidebarCollapsed((value) => !value)}>
+                  <PanelLeft className="h-4 w-4" />
+                </Button>
                 <span className="hidden items-center gap-1.5 text-xs font-medium text-muted-foreground sm:inline-flex">
                   <span>Status</span>
                   <span className={`h-2 w-2 rounded-full ${statusColor}`} />
@@ -174,7 +182,7 @@ export default function DashboardShell({
             </div>
           </div>
         </header>
-        <main className="mx-auto max-w-7xl space-y-5 px-4 py-5 sm:px-6 lg:px-10 lg:py-6">
+        <main className={`${wide ? "w-full" : "mx-auto max-w-7xl"} space-y-5 px-4 py-5 sm:px-6 lg:px-10 lg:py-6`}>
           {children}
         </main>
       </div>

@@ -83,23 +83,28 @@ export default function WhatsAppConnectDialog({
     return generateInstanceName();
   };
 
+  const invokeEvolution = async (body: Record<string, unknown>) => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
+    return supabase.functions.invoke("evolution-api", {
+      body,
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  };
+
   const startPolling = (name: string) => {
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
       try {
-        const { data, error } = await supabase.functions.invoke(
-          "evolution-api",
-          { body: { action: "getStatus", instanceName: name } },
-        );
+        const { data, error } = await invokeEvolution({ action: "getStatus", instanceName: name });
         if (!error && data?.state === "open") {
           if (pollRef.current) {
             clearInterval(pollRef.current);
             pollRef.current = null;
           }
           try {
-            await supabase.functions.invoke("evolution-api", {
-              body: { action: "fetchInfo", instanceName: name },
-            });
+            await invokeEvolution({ action: "fetchInfo", instanceName: name });
             toast({
               title: "Conectado!",
               description: "WhatsApp conectado com sucesso.",
@@ -125,9 +130,7 @@ export default function WhatsAppConnectDialog({
     const name = await getOrCreateInstanceName();
     setInstanceName(name);
     try {
-      const { data, error } = await supabase.functions.invoke("evolution-api", {
-        body: { action: "createAndConnect", instanceName: name },
-      });
+      const { data, error } = await invokeEvolution({ action: "createAndConnect", instanceName: name });
       setLoading(false);
       if (error || !data) {
         console.warn(
@@ -182,13 +185,7 @@ export default function WhatsAppConnectDialog({
     const name = await getOrCreateInstanceName();
     setInstanceName(name);
     try {
-      const { data, error } = await supabase.functions.invoke("evolution-api", {
-        body: {
-          action: "getPairingCode",
-          phone: cleanPhone,
-          instanceName: name,
-        },
-      });
+      const { data, error } = await invokeEvolution({ action: "getPairingCode", phone: cleanPhone, instanceName: name });
       setLoading(false);
       if (error || !data?.pairingCode) {
         if (data?.connected || data?.state === "open") {
@@ -239,8 +236,7 @@ export default function WhatsAppConnectDialog({
           <DialogDescription>
             {step === "choose" && "Escolha como deseja conectar"}
             {step === "phone-pairing" && "Insira o número que deseja conectar"}
-            {step === "qr" &&
-              "Abra o WhatsApp → Aparelhos conectados → Conectar"}
+            {step === "qr" && "Abra o WhatsApp → Aparelhos conectados → Conectar"}
             {step === "pairing" && "Insira o código no seu WhatsApp"}
           </DialogDescription>
         </DialogHeader>
@@ -343,12 +339,12 @@ export default function WhatsAppConnectDialog({
                   />
                 </div>
               </div>
-            </div>
+                </div>
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> A aguardar
               leitura...
             </p>
-          </div>
+            </div>
         )}
         {step === "pairing" && pairingCode && (
           <div className="flex flex-col items-center gap-4 py-4">
